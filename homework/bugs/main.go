@@ -26,7 +26,7 @@ func ExistCounter() int {
 func Shadowing() int {
 	x := 1
 	for i := 0; i <= 10; i++ {
-		x := x + 1
+		x = x + 1
 		x *= 2
 	}
 	return x
