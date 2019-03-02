@@ -16,7 +16,7 @@ func ExistCounter() int {
 	}
 	totalExist := 0
 	for _, id := range ids {
-		if enabled[id] {
+		if _, ok := enabled[id]; ok {
 			totalExist++
 		}
 	}
@@ -39,7 +39,7 @@ func BadMap() (resultErr error) {
 		}
 	}()
 
-	var users map[int]string
+	users := make(map[int]string)
 	users[100500] = "rvasily"
 
 	return nil
