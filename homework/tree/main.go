@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io"
+//	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,4 +19,30 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
+}
+
+func dirTree(out *os.File, path string, printFiles bool) error {
+	err := filepath.Walk(path, func(pathToFile string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n", path, err)
+			return err
+		}
+
+		if pathToFile == path {
+			return nil
+		}
+
+		for i := 0; i < strings.Count(pathToFile, string(os.PathSeparator)); i++ {
+			fmt.Print("    ")
+		}
+		if info.IsDir() {
+			fmt.Print("└───")
+		} else {
+			fmt.Print("├───")
+		}
+		fmt.Print(info.Name(), "\n")
+
+		return nil
+	})
+	return err
 }
