@@ -1,11 +1,13 @@
 package main
 
 import (
-	"fmt"
-//	"io"
+//	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
-	"path/filepath"
+//	"path/filepath"
 	"strings"
+	"strconv"
 )
 
 func main() {
@@ -21,28 +23,75 @@ func main() {
 	}
 }
 
-func dirTree(out *os.File, path string, printFiles bool) error {
-	err := filepath.Walk(path, func(pathToFile string, info os.FileInfo, err error) error {
-		if err != nil {
-			fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n", path, err)
-			return err
-		}
+func dirTree(out io.Writer, path string, printFiles bool) error {
+	levels := make(map[int]bool)
 
-		if pathToFile == path {
-			return nil
-		}
+	err := watchDir(out, path, printFiles, levels)
 
-		for i := 0; i < strings.Count(pathToFile, string(os.PathSeparator)); i++ {
-			fmt.Print("    ")
-		}
-		if info.IsDir() {
-			fmt.Print("└───")
-		} else {
-			fmt.Print("├───")
-		}
-		fmt.Print(info.Name(), "\n")
-
-		return nil
-	})
 	return err
+}
+
+func watchDir(out io.Writer, path string, printFiles bool, levels map[int]bool) error {
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return err
+	}
+
+	if !printFiles {
+		files = dirsOnly(files)
+	}
+
+	numOfFiles := len(files)
+
+	for i := 0; i < numOfFiles; i++ {
+		pathToFile := path + string(os.PathSeparator) + files[i].Name()
+		level := strings.Count(pathToFile, string(os.PathSeparator))
+
+		for j := 1; j < level; j++ {
+			if levels[j] {
+				out.Write([]byte("│"))
+			}
+			out.Write([]byte("\t"))
+		}
+
+		if i != numOfFiles - 1 {
+			out.Write([]byte("├───"))
+			levels[level] = true
+		} else {
+			out.Write([]byte("└───"))
+			delete(levels, level)
+		}
+		out.Write([]byte(files[i].Name()))
+
+		if files[i].IsDir() {
+			out.Write([]byte("\n"))
+			watchDir(out, pathToFile, printFiles, levels)
+		} else {
+			out.Write(sizeOfFile(files[i].Size()))
+			out.Write([]byte("\n"))
+		}
+	}
+
+	return err
+}
+
+func sizeOfFile(size int64) []byte {
+	var result string
+	if size == 0 {
+		result = " (empty)"
+	} else {
+		result = " (" + strconv.Itoa(int(size)) + "b)"
+	}
+
+	return []byte(result)
+}
+
+func dirsOnly(files []os.FileInfo) []os.FileInfo {
+	var directories []os.FileInfo
+	for _, file := range files {
+		if file.IsDir() {
+			directories = append(directories, file)
+		}
+	}
+	return directories
 }
