@@ -43,7 +43,7 @@ func TestCalcAbnormanl(t *testing.T) {
 	out := new(bytes.Buffer)
 	err := calc(testAbnormalString, out)
 	if err != nil {
-		if err.Error() != testAbnormalError	{
+		if err.Error() != testAbnormalError {
 			t.Errorf("test for OK Failed - errors not match\nGot:\n%v\nExpected:\n%v", err.Error(), testAbnormalError)
 		}
 	}
@@ -53,4 +53,32 @@ func TestCalcAbnormanl(t *testing.T) {
 	}
 }
 
+const testDivisionString = `8 2 / 2 /`
+const testDivisionResult = `2`
 
+func TestCalcDivision(t *testing.T) {
+	out := new(bytes.Buffer)
+	err := calc(testDivisionString, out)
+	if err != nil {
+		t.Errorf("test for OK Failed - error")
+	}
+	result := out.String()
+	if result != testDivisionResult {
+		t.Errorf("test for OK Failed - results not match\nGot:\n%v\nExpected:\n%v", result, testDivisionResult)
+	}
+}
+
+const testMultiplexString = `5 5 * 4 *`
+const testMultiplexResult = `100`
+
+func TestCalcMultiplex(t *testing.T) {
+	out := new(bytes.Buffer)
+	err := calc(testMultiplexString, out)
+	if err != nil {
+		t.Errorf("test for OK Failed - error")
+	}
+	result := out.String()
+	if result != testMultiplexResult {
+		t.Errorf("test for OK Failed - results not match\nGot:\n%v\nExpected:\n%v", result, testMultiplexResult)
+	}
+}

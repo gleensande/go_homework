@@ -1,13 +1,39 @@
 package main
 
 import (
-	"os"
-	"io"
 	"bufio"
+	"errors"
+	"io"
+	"os"
 	"strconv"
 	"strings"
-	"errors"
 )
+
+type Stack struct {
+	Stack    []int
+	RealSize int
+}
+
+func (s *Stack) init() {
+	s.RealSize = 0
+}
+
+func (s *Stack) push(n int) {
+	if s.RealSize < len(s.Stack) {
+		s.Stack[s.RealSize] = n
+	} else {
+		s.Stack = append(s.Stack, n)
+	}
+	s.RealSize++
+}
+
+func (s *Stack) pop() (int, error) {
+	if s.RealSize <= 0 {
+		return 0, errors.New("stack is empty")
+	}
+	s.RealSize--
+	return s.Stack[s.RealSize], nil
+}
 
 func main() {
 	out := os.Stdout
@@ -22,58 +48,88 @@ func main() {
 
 func calc(in string, out io.Writer) error {
 	ins := strings.Split(in, " ")
-	var stack [1000]int
-	var err error
 
-	sp := 0
+	var err error
+	abnormErr := errors.New("abnormal syntax")
+
+	var stack Stack
+	stack.init()
 
 	for _, r := range ins {
 		var x int
-
-		if sp < 0 {
-			return errors.New("abnormal syntax")
-		}
+		var popped1, popped2 int
 
 		switch r {
-			case " " : fallthrough
-			case "\n" :
-			case "=" :
-				break
-			case "+":
-				if sp < 2 {
-					return errors.New("abnormal syntax")
-				}
-				stack[sp - 2] = stack[sp - 2] + stack[sp - 1]
-				sp--
-			case "-":
-				if sp < 2 {
-					return errors.New("abnormal syntax")
-				}
-				stack[sp - 2] = stack[sp - 2] - stack[sp - 1]
-				sp--
-			case "*":
-				if sp < 2 {
-					return errors.New("abnormal syntax")
-				}
-				stack[sp - 2] = stack[sp - 1] * stack[sp - 2]
-				sp--
-			case "/":
-				if sp < 2 {
-					return errors.New("abnormal syntax")
-				}
-				stack[sp - 2] = stack[sp - 2] / stack[sp - 1]
-				sp--
-			default:
-				x, err = strconv.Atoi(r)
-				if err != nil {
-					return err
-				}
-				stack[sp] = x
-				sp++
+		case " ":
+			fallthrough
+		case "\n":
+		case "=":
+			break
+		case "+":
+			popped1, err = stack.pop()
+			if err != nil {
+				return abnormErr
+			}
+
+			popped2, err = stack.pop()
+			if err != nil {
+				return abnormErr
+			}
+
+			stack.push(popped2 + popped1)
+		case "-":
+			popped1, err = stack.pop()
+			if err != nil {
+				return abnormErr
+			}
+
+			popped2, err = stack.pop()
+			if err != nil {
+				return abnormErr
+			}
+
+			stack.push(popped2 - popped1)
+		case "*":
+			popped1, err = stack.pop()
+			if err != nil {
+				return abnormErr
+			}
+
+			popped2, err = stack.pop()
+			if err != nil {
+				return abnormErr
+			}
+
+			stack.push(popped2 * popped1)
+		case "/":
+			popped1, err = stack.pop()
+			if err != nil {
+				return abnormErr
+			}
+			if popped1 == 0 {
+				return errors.New("division by 0")
+			}
+
+			popped2, err = stack.pop()
+			if err != nil {
+				return abnormErr
+			}
+
+			stack.push(popped2 / popped1)
+		default:
+			x, err = strconv.Atoi(r)
+			if err != nil {
+				return err
+			}
+			stack.push(x)
 		}
 	}
 
-	out.Write([]byte(strconv.Itoa(stack[sp - 1])))
+	popped, err := stack.pop()
+	if err != nil {
+		return abnormErr
+	}
+	out.Write([]byte(strconv.Itoa(popped)))
 
 	return err
 }
